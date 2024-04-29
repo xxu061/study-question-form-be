@@ -1,0 +1,6 @@
+@study_question_form_be_HostAddress = http://localhost:5002
+
+GET {{study_question_form_be_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
