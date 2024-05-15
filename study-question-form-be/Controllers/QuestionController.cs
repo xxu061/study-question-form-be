@@ -10,9 +10,11 @@ namespace study_question_form_be.Controllers
     public class QuestionController : ControllerBase
     {
         private readonly IQuestionService _service;
-        public QuestionController(IQuestionService service)
+        private readonly IMongoDbService _mongoDbService;
+        public QuestionController(IQuestionService service, IMongoDbService mongoDbService)
         {
             _service = service;
+            _mongoDbService = mongoDbService;
         }
 
         [HttpGet("initialQuestions")]
@@ -30,7 +32,8 @@ namespace study_question_form_be.Controllers
         [HttpPost("choosePath")]
         public async Task<Application> ChoosePath(Application application)
         {
-            return await _service.ChoosePath(application.Id.Value, application.PreferredMajors);
+            await _service.ChoosePath(application.Id.Value, application.PreferredMajors);
+            return await _mongoDbService.SetRecommendations(application.Id.Value);
         }
 
         [HttpGet("majorSuggestions")]

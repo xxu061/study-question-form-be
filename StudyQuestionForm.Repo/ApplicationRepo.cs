@@ -51,6 +51,10 @@ namespace StudyQuestionForm.Repo
                                             .Set(a => a.Budget, application.Budget)
                                             .Set(a => a.Questions, application.Questions)
                                             .Set(a => a.StartPeriod, application.StartPeriod)
+                                            .Set(a => a.Name, application.Name)
+                                            .Set(a => a.BestMatch, application.BestMatch)
+                                            .Set(a => a.Targeting, application.Targeting)
+                                            .Set(a => a.Conservative, application.Conservative)
                                             .Set(a => a.TargetQualification, application.TargetQualification)
                 );
         }

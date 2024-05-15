@@ -1,9 +1,4 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace StudyQuestionForm.Domain
 {
@@ -24,8 +19,17 @@ namespace StudyQuestionForm.Domain
         public int? QsRank { get; set; }
         [BsonElement("schoolName")]
         public string? SchoolName { get; set; }
+        [BsonElement("city")]
+        public string? City { get; set; }
         [BsonElement("degree")]
         public string Degree { get; set; }
+
+        [BsonElement("duration")]
+        public string Duration { get; set; }
+        [BsonElement("durationInMonth")]
+        public int DurationInMonth { get; set; }
+        [BsonElement("tuitionFee")]
+        public decimal? TuitionFee { get; set; }
 
         public string DisplayName
         {
@@ -35,8 +39,8 @@ namespace StudyQuestionForm.Domain
             }
         }
 
-        public IList<Domain.Path> Paths { get; set; }
-        [BsonElement("selectedPaths")]
-        public IList<Domain.Path> SelectedPaths { get; set; }
+        public IList<Domain.Path>? Paths { get; set; }
+        //[BsonElement("selectedPaths")]
+        //public IList<Domain.Path> SelectedPaths { get; set; }
     }
 }

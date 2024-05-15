@@ -23,5 +23,9 @@ namespace StudyQuestionForm.Domain
         public int DurationInMonth { get; set; }
         public bool IsQualified { get { return DisqualifyReasons == null || !DisqualifyReasons.Any(); } }
         public IList<string>? DisqualifyReasons { get; set; }
+        [BsonElement("selected")]
+        public bool Selected { get; set; }
+        [BsonElement("englishRequirements")]
+        public EnglishRequirements? EnglishRequirements { get; set; }
     }
 }

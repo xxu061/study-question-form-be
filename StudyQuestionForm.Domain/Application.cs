@@ -10,6 +10,8 @@ namespace StudyQuestionForm.Domain
         public string? Country { get; set; }
         [BsonElement("state")]
         public string? State { get; set; }
+        [BsonElement("name")] 
+        public string? Name { get; set;}
         [BsonElement("city")]
         public string? City { get; set; }
         [BsonElement("age")]
@@ -38,5 +40,11 @@ namespace StudyQuestionForm.Domain
         public string? TargetQualification { get; set; }
         [BsonElement("startPeriod")]
         public string? StartPeriod { get; set; }
+        [BsonElement("bestMatch")]
+        public Plan? BestMatch { get; set; }
+        [BsonElement("targeting")]
+        public Plan? Targeting { get; set; }
+        [BsonElement("conservative")]
+        public Plan? Conservative { get; set; }
     }
 }

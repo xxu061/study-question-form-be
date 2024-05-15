@@ -2,6 +2,7 @@
 using StudyQuestionForm.Domain;
 using StudyQuestionForm.Repo;
 using System.Linq;
+using Path = StudyQuestionForm.Domain.Path;
 
 namespace StudyQuestionForm.Service
 {
@@ -51,18 +52,7 @@ namespace StudyQuestionForm.Service
                 var matchPaths = paths.Where(p => p.EligibleSchools.Any(e => e.School == major.SchoolName) && p.MinimumQualification.Contains(existingApplication.Qualification));
                 foreach(var path in matchPaths)
                 {
-                    path.DisqualifyReasons = new List<string>();
-                    foreach(var qualification in path.MinimumQualification)
-                    {
-                        if(!CompareQualification(qualification, existingApplication.Qualification))
-                        {
-                            path.DisqualifyReasons.Add($"最低学历要求：{qualification} 申请人学历：{existingApplication.Qualification}");
-                        }
-                    }
-                    if (path.MinimumScore > existingApplication.AverageGrade)
-                    {
-                        path.DisqualifyReasons.Add($"最低平均分要求：{path.MinimumScore} 申请人平均分：{existingApplication.AverageGrade}");
-                    }
+                    path.DisqualifyReasons = ValidatePath(path, existingApplication);
                 }
                 major.Paths = matchPaths.ToList();
             }
@@ -71,6 +61,38 @@ namespace StudyQuestionForm.Service
 
             return existingApplication.PreferredMajors;
         }
+
+        private IList<string> ValidatePath(Path path, Application existingApplication)
+        {
+            var reasons = new List<string>();
+            foreach (var qualification in path.MinimumQualification)
+            {
+                if (!CompareQualification(qualification, existingApplication.Qualification))
+                {
+                    reasons.Add($"最低学历要求：{qualification} 申请人学历：{existingApplication.Qualification}");
+                }
+            }
+            if (path.MinimumScore > existingApplication.AverageGrade)
+            {
+                reasons.Add($"最低平均分要求：{path.MinimumScore} 申请人平均分：{existingApplication.AverageGrade}");
+            }
+
+            return reasons;
+        }
+        public async Task<Application> SetRecommendations(Guid id)
+        {
+            var existingApplication = await _applicationRepo.GetApplication(id);
+
+            existingApplication.BestMatch = GetBestMatch(existingApplication);
+            existingApplication.Targeting = GetTargeting(existingApplication);
+            existingApplication.Conservative = GetConservative(existingApplication);
+
+            await _applicationRepo.UpdateApplication(existingApplication);
+
+            return existingApplication;
+        }
+
+
         public async Task<Application> CreateApplication()
         {
             return await _applicationRepo.CreateApplication();
@@ -114,6 +136,107 @@ namespace StudyQuestionForm.Service
 
             return schools.SelectMany(s => s.OfferedMajors).OrderBy(m => m.Name).ToList();
         }
+
+        private IList<Plan> GetPlan(Application application)
+        {
+            List<Plan> plans = new List<Plan>();
+            foreach(var major in application.PreferredMajors)
+            {
+                plans.Add(new Plan { Major = major, 
+                    Score = GetScore(application, major), 
+                    Path = GetBestPath(major.Paths, application) });
+            }
+
+            return plans;
+        }
+
+        private Plan GetBestMatch(Application application)
+        {
+            var major = application.PreferredMajors
+                .Where(m => m.TuitionFee + (GetBestPath(m.Paths, application) == null ? 0 : GetBestPath(m.Paths, application).TuitionFee) 
+                < Convert.ToDecimal(application.Budget.Substring(1, application.Budget.Length - 1)))
+                .OrderByDescending(m => m.QsRank)
+                .ThenByDescending(m => m.TuitionFee)
+                .FirstOrDefault();
+
+            var path = GetBestPath(major.Paths, application);
+
+            return new Plan { Major = major, Path = path, Score = GetScore(application, major) };
+        }
+
+        private Plan GetTargeting(Application application)
+        {
+            var major = application.PreferredMajors
+                .OrderByDescending(m => m.QsRank)
+                .ThenByDescending(m => m.TuitionFee)
+                .FirstOrDefault();
+            var path = GetBestPath(major.Paths, application);
+
+            return new Plan { Major = major, Path = path, Score = GetScore(application, major) };
+        }
+
+        private Plan GetConservative(Application application)
+        {
+            var major = application.PreferredMajors
+                .OrderByDescending(m => m.QsRank)
+                .ThenByDescending(m => m.TuitionFee)
+                .FirstOrDefault();
+            var path = GetBestPath(major.Paths, application);
+
+            return new Plan { Major = major, Path = path, Score = GetScore(application, major) };
+        }
+
+        private decimal GetScore(Application application, Major major)
+        {
+            decimal score = 0;
+            var budget = Convert.ToDecimal(application.Budget.Substring(1, application.Budget.Length - 1));
+           
+            score += 1000 - major.QsRank.Value;
+            var path = GetBestPath(major.Paths, application);
+            var totalTuitionFee = major.TuitionFee.Value - (path == null ? 0 : path.TuitionFee);
+
+            score += budget - totalTuitionFee;
+
+            return score;
+        }
+
+        private Domain.Path GetBestPath(IList<Domain.Path> paths, Application application)
+        {
+            foreach(var path in paths)
+            {
+                path.DisqualifyReasons = ValidatePath(path, application);
+            }
+            if (paths != null && paths.Any())
+            {
+                var path = paths.Where(p => p.Selected && p.IsQualified)
+                    .OrderByDescending(p => p.DurationInMonth)
+                    .ThenByDescending(p => p.TuitionFee)
+                    .FirstOrDefault();
+                return path;
+            }
+            else
+            {
+                return null;
+            }            
+        }
+
+        private Domain.Path GetTopPath(IList<Domain.Path> paths)
+        {
+            if (paths != null && paths.Any())
+            {
+                var path = paths.Where(p => p.Selected)
+                    .OrderByDescending(p => p.DurationInMonth)
+                    .ThenByDescending(p => p.TuitionFee)
+                    .FirstOrDefault();
+                return path;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+
 
         private static bool CompareQualification(string qualification1, string qualification2)
         {
@@ -178,5 +301,6 @@ namespace StudyQuestionForm.Service
         Task<IList<Major>> GetPaths(Application application);
         Task<IList<StudyProgram>> GetStudyPrograms(Application application);
         Task<Application> GetApplication(Guid id);
+        Task<Application> SetRecommendations(Guid id);
     }
 }
