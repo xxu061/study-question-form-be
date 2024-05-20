@@ -50,7 +50,8 @@ namespace StudyQuestionForm.Service
             foreach (var major in existingApplication.PreferredMajors)
             {
                 var matchPaths = paths.Where(p => p.EligibleSchools.Any(e => e.School == major.SchoolName) && p.MinimumQualification.Contains(existingApplication.Qualification));
-                foreach(var path in matchPaths)
+                var pathForSchool = paths.Where(p => p.EligibleSchools.Any(e => e.School == major.SchoolName));
+                foreach (var path in matchPaths)
                 {
                     path.DisqualifyReasons = ValidatePath(path, existingApplication);
                 }
@@ -155,7 +156,7 @@ namespace StudyQuestionForm.Service
             var major = application.PreferredMajors
                 .Where(m => m.TuitionFee + (GetBestPath(m.Paths, application) == null ? 0 : GetBestPath(m.Paths, application).TuitionFee) 
                 < Convert.ToDecimal(application.Budget.Substring(1, application.Budget.Length - 1)))
-                .OrderByDescending(m => m.QsRank)
+                .OrderBy(m => m.QsRank)
                 .ThenByDescending(m => m.TuitionFee)
                 .FirstOrDefault();
 

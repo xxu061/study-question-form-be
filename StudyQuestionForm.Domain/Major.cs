@@ -40,6 +40,9 @@ namespace StudyQuestionForm.Domain
         }
 
         public IList<Domain.Path>? Paths { get; set; }
+
+        [BsonElement("course")]
+        public IList<Course>? Courses { get; set; }
         //[BsonElement("selectedPaths")]
         //public IList<Domain.Path> SelectedPaths { get; set; }
     }
