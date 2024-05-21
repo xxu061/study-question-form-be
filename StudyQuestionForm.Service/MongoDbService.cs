@@ -66,12 +66,10 @@ namespace StudyQuestionForm.Service
         private IList<string> ValidatePath(Path path, Application existingApplication)
         {
             var reasons = new List<string>();
-            foreach (var qualification in path.MinimumQualification)
+            var isQualifield = CompareQualifications(path.MinimumQualification, existingApplication.Qualification);
+            if (!string.IsNullOrEmpty(isQualifield))
             {
-                if (!CompareQualification(qualification, existingApplication.Qualification))
-                {
-                    reasons.Add($"最低学历要求：{qualification} 申请人学历：{existingApplication.Qualification}");
-                }
+                reasons.Add(isQualifield);
             }
             if (path.MinimumScore > existingApplication.AverageGrade)
             {
@@ -209,8 +207,9 @@ namespace StudyQuestionForm.Service
             }
             if (paths != null && paths.Any())
             {
-                var path = paths.Where(p => p.Selected && p.IsQualified)
-                    .OrderByDescending(p => p.DurationInMonth)
+                var path = paths.Where(p => p.IsQualified)
+                    .OrderByDescending(p => p.Selected)
+                    .ThenByDescending(p => p.DurationInMonth)
                     .ThenByDescending(p => p.TuitionFee)
                     .FirstOrDefault();
                 return path;
@@ -237,7 +236,21 @@ namespace StudyQuestionForm.Service
             }
         }
 
+        private static string CompareQualifications(IList<string> qualifications, string qualification) 
+        {
+            var mappedQualifications = qualifications.Select(q => new { value = q, mappedValue = MapQualification(q) }).OrderBy(q => q.mappedValue);
+            
+            var lowestQualification = mappedQualifications.FirstOrDefault();
 
+            if(lowestQualification.mappedValue > MapQualification(qualification))
+            {
+                return $"最低学历要求：{lowestQualification.value} 申请人学历：{qualification}";
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         private static bool CompareQualification(string qualification1, string qualification2)
         {
