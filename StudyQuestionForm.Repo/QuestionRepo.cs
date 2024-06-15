@@ -19,7 +19,9 @@ namespace StudyQuestionForm.Repo
 
             FilterDefinition<Question> filter = Builders<Question>.Filter.Eq(r => r.IsInitialQuestion, true);
 
-            return await (await collection.FindAsync<Question>(filter)).ToListAsync();
+            var result = await (await collection.FindAsync<Question>(filter)).ToListAsync();
+
+            return result;
         }
 
         public async Task<IList<Question>> GetQuestions(IList<int> questionId, object value, bool filterAnswer)
